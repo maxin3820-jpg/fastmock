@@ -6,17 +6,30 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // ── Admin route protection ──────────────────────────────────────
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+  // Covers /admin AND /admin/* but NOT /admin/login
+  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const isAdminLogin = pathname === '/admin/login'
+
+  if (isAdminRoute && !isAdminLogin) {
     const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value
+
     if (!token) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
+
     const isValid = await verifyAdminToken(token)
     if (!isValid) {
       const response = NextResponse.redirect(new URL('/admin/login', request.url))
       response.cookies.delete(ADMIN_COOKIE_NAME)
       return response
     }
+
+    // Valid admin — allow through, no Supabase check needed
+    return NextResponse.next()
+  }
+
+  // ── Skip Supabase check for admin login page and API routes ─────
+  if (isAdminLogin || pathname.startsWith('/api/')) {
     return NextResponse.next()
   }
 
@@ -44,7 +57,9 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // Protect dashboard and test routes
   if ((pathname.startsWith('/dashboard') || pathname.startsWith('/test')) && !user) {
@@ -61,7 +76,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // Admin routes (both /admin and /admin/*)
+    '/admin',
     '/admin/:path*',
+    // User routes
     '/dashboard/:path*',
     '/test/:path*',
     '/login',
