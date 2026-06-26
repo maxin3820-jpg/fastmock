@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getAdminFromRequest } from '@/lib/admin-auth'
 import { createServiceClient } from '@/lib/supabase/server'
 
-export async function POST(req: NextRequest) {
+export async function POST(req) {
   const isAdmin = await getAdminFromRequest(req)
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

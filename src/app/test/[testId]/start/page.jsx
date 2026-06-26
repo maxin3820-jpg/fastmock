@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import TestStartClient from './TestStartClient'
 
-export default async function TestStartPage({ params }: { params: Promise<{ testId: string }> }) {
+export default async function TestStartPage({ params }) {
   const { testId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

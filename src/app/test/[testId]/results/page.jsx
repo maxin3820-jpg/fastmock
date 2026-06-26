@@ -4,12 +4,7 @@ import Link from 'next/link'
 import { formatScore, formatDate } from '@/lib/utils'
 import { Trophy, CheckCircle, XCircle, MinusCircle, RotateCcw, Home } from 'lucide-react'
 
-type ScoreBar = { subject: string; score: number; correct: number; incorrect: number; unattempted: number; total: number; penalty: number }
-
-export default async function ResultsPage({ params, searchParams }: {
-  params: Promise<{ testId: string }>
-  searchParams: Promise<{ attempt?: string }>
-}) {
+export default async function ResultsPage({ params, searchParams }) {
   const { testId } = await params
   const { attempt: attemptId } = await searchParams
   const supabase = await createClient()
@@ -21,10 +16,8 @@ export default async function ResultsPage({ params, searchParams }: {
     const { data } = await supabase.from('test_attempts').select('*').eq('id', attemptId).eq('user_id', user.id).single()
     attempt = data
   } else {
-    const { data } = await supabase.from('test_attempts').select('*')
-      .eq('user_id', user.id).eq('test_id', testId)
-      .in('status', ['submitted', 'force_submitted'])
-      .order('submitted_at', { ascending: false }).limit(1).single()
+    const { data } = await supabase.from('test_attempts').select('*').eq('user_id', user.id).eq('test_id', testId)
+      .in('status', ['submitted','force_submitted']).order('submitted_at', { ascending: false }).limit(1).single()
     attempt = data
   }
 
@@ -36,35 +29,32 @@ export default async function ResultsPage({ params, searchParams }: {
   const totalQ = questions?.length || 100
   const percentage = ((attempt.total_score / totalQ) * 100).toFixed(1)
 
-  const sections: ScoreBar[] = [
+  const sections = [
     { subject: 'Advanced Math', score: attempt.score_advanced_math, correct: 0, incorrect: 0, unattempted: 0, total: 30, penalty: 0.25 },
     { subject: 'Basic Math', score: attempt.score_basic_math, correct: 0, incorrect: 0, unattempted: 0, total: 20, penalty: 0.25 },
     { subject: 'Analytical Reasoning', score: attempt.score_analytical, correct: 0, incorrect: 0, unattempted: 0, total: 30, penalty: 0.25 },
     { subject: 'English', score: attempt.score_english, correct: 0, incorrect: 0, unattempted: 0, total: 20, penalty: 0.0825 },
   ]
 
-  // Compute per-subject stats from actual answers
   if (questions && attempt.answers) {
-    questions.forEach((q: { id: string; subject: string; correct_answer: string }) => {
+    questions.forEach(q => {
       const sec = sections.find(s => s.subject === q.subject)
       if (!sec) return
-      const ans = (attempt.answers as Record<string, string | null>)[q.id]
+      const ans = attempt.answers[q.id]
       if (!ans) sec.unattempted++
       else if (ans === q.correct_answer) sec.correct++
       else sec.incorrect++
     })
   }
 
-  const scoreColor = (pct: number) => pct >= 70 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444'
+  const scoreColor = (pct) => pct >= 70 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444'
 
   return (
     <div className="min-h-screen px-4 py-8" style={{ background: 'var(--navy-dark)' }}>
       <div className="max-w-2xl mx-auto space-y-6">
-
-        {/* Score Header */}
         <div className="card text-center" style={{ padding: '2.5rem' }}>
           <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"
-            style={{ background: `rgba(${attempt.total_score >= 50 ? '16,185,129' : attempt.total_score >= 35 ? '245,158,11' : '239,68,68'},0.15)`, border: `3px solid ${scoreColor(parseFloat(percentage))}` }}>
+            style={{ background: `rgba(${parseFloat(percentage) >= 50 ? '16,185,129' : '239,68,68'},0.15)`, border: `3px solid ${scoreColor(parseFloat(percentage))}` }}>
             <Trophy className="w-9 h-9" style={{ color: scoreColor(parseFloat(percentage)) }} />
           </div>
           <h1 className="text-3xl font-extrabold text-white">{formatScore(attempt.total_score)}<span className="text-gray-400 text-lg"> / {totalQ}</span></h1>
@@ -74,7 +64,6 @@ export default async function ResultsPage({ params, searchParams }: {
           {attempt.status === 'force_submitted' && <span className="badge badge-warning mt-3 inline-flex">Auto-submitted (time ran out)</span>}
         </div>
 
-        {/* Summary Stats */}
         <div className="grid grid-cols-3 gap-3">
           {[
             { label: 'Correct', value: attempt.correct_count, icon: <CheckCircle className="w-4 h-4" />, color: '#10b981' },
@@ -89,7 +78,6 @@ export default async function ResultsPage({ params, searchParams }: {
           ))}
         </div>
 
-        {/* Section Breakdown */}
         <div className="card">
           <h2 className="font-bold text-white mb-4 text-lg">Section Breakdown</h2>
           <div className="space-y-4">
@@ -99,13 +87,10 @@ export default async function ResultsPage({ params, searchParams }: {
                 <div key={s.subject}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-sm font-medium text-white">{s.subject}</span>
-                    <span className="text-sm font-bold" style={{ color: scoreColor(pct) }}>
-                      {formatScore(s.score)} / {s.total}
-                    </span>
+                    <span className="text-sm font-bold" style={{ color: scoreColor(pct) }}>{formatScore(s.score)} / {s.total}</span>
                   </div>
                   <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                    <div className="h-full rounded-full transition-all"
-                      style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: scoreColor(pct) }} />
+                    <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, pct))}%`, background: scoreColor(pct) }} />
                   </div>
                   <div className="flex gap-4 mt-1.5 text-xs text-gray-400">
                     <span className="text-green-400">✓ {s.correct}</span>
@@ -118,14 +103,9 @@ export default async function ResultsPage({ params, searchParams }: {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <Link href={`/test/${testId}/start`} className="btn-primary flex-1 text-center">
-            <RotateCcw className="w-4 h-4" />Retake Test
-          </Link>
-          <Link href="/dashboard" className="btn-secondary flex-1 text-center">
-            <Home className="w-4 h-4" />Dashboard
-          </Link>
+          <Link href={`/test/${testId}/start`} className="btn-primary flex-1 text-center"><RotateCcw className="w-4 h-4" />Retake Test</Link>
+          <Link href="/dashboard" className="btn-secondary flex-1 text-center"><Home className="w-4 h-4" />Dashboard</Link>
         </div>
       </div>
     </div>

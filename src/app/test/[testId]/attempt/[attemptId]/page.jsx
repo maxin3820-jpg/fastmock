@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import QuizEngine from './QuizEngine'
 
-export default async function AttemptPage({ params }: { params: Promise<{ testId: string; attemptId: string }> }) {
+export default async function AttemptPage({ params }) {
   const { testId, attemptId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -12,18 +12,14 @@ export default async function AttemptPage({ params }: { params: Promise<{ testId
   if (!attempt) redirect('/dashboard')
   if (attempt.status !== 'in_progress') redirect(`/test/${testId}/results?attempt=${attemptId}`)
 
-  const { data: questions } = await supabase
-    .from('questions')
-    .select('*')
-    .eq('test_id', testId)
-    .order('question_order', { ascending: true })
+  const { data: questions } = await supabase.from('questions').select('*').eq('test_id', testId).order('question_order', { ascending: true })
 
   if (!questions || questions.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center gradient-cyber">
         <div className="card text-center p-8">
           <p className="text-white text-lg font-bold mb-2">No Questions Yet</p>
-          <p className="text-gray-400 text-sm">The admin hasn't uploaded questions for this test yet. Check back soon!</p>
+          <p className="text-gray-400 text-sm">The admin has not uploaded questions for this test yet.</p>
         </div>
       </div>
     )
