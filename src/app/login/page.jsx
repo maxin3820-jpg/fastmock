@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { GraduationCap, Eye, EyeOff } from 'lucide-react'
-import AdminFooterButton from '@/components/AdminFooterButton' from 'lucide-react'
+import AdminFooterButton from '@/components/AdminFooterButton'
 
 export default function LoginPage() {
   const router = useRouter()
