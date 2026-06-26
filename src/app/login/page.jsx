@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { GraduationCap, Eye, EyeOff } from 'lucide-react'
+import AdminFooterButton from '@/components/AdminFooterButton' from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -60,6 +61,9 @@ export default function LoginPage() {
           No account yet?{' '}
           <Link href="/register" className="font-semibold hover:underline" style={{ color: 'var(--cyan)' }}>Sign up free</Link>
         </p>
+        <div className="text-center mt-4">
+          <AdminFooterButton />
+        </div>
       </div>
     </div>
   )
